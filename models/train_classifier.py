@@ -1,23 +1,26 @@
 import sys
-import numpy as np
 import pandas as pd
+import numpy as np
 from sqlalchemy import create_engine
-import nltk
-from nltk.tokenize import word_tokenize
-from nltk.stem import WordNetLemmatizer
-from nltk.corpus import stopwords
 import re
-from sklearn.pipeline import Pipeline
-from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
-from sklearn.ensemble import AdaBoostClassifier
-from sklearn.multioutput import MultiOutputClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import classification_report
-from sklearn.model_selection import GridSearchCV
 import pickle
+import nltk
 
 nltk.download('punkt')
 nltk.download('stopwords')
+
+from nltk.corpus import stopwords
+from nltk.tokenize import word_tokenize
+from nltk.stem import WordNetLemmatizer
+
+from sklearn.pipeline import Pipeline, FeatureUnion
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.multioutput import MultiOutputClassifier
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, make_scorer, classification_report
+from sklearn.model_selection import GridSearchCV
+from sklearn.base import BaseEstimator, TransformerMixin
 
 def load_data(database_filepath):
     engine = create_engine("sqlite:///" + database_filepath)
@@ -26,20 +29,23 @@ def load_data(database_filepath):
     X = df['message']
     Y = df.drop(['id', 'message', 'original', 'genre'], axis = 1)
     
-    return X, Y, Y.columns
+    category_names = list(Y.columns.values)
+    
+    return X, Y, category_names
 
 
 def tokenize(text):
-    text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
+    tokens = word_tokenize(text)
+    lemmatizer = WordNetLemmatizer()
+    stopWords = set(stopwords.words('english'))
+    
+    clean_tokens = []
+    for tok in tokens:
+        clean_tok = lemmatizer.lemmatize(tok).lower().strip()
+        if tok not in stopWords:
+            clean_tokens.append(clean_tok)
 
-    words = word_tokenize(text)
-
-    stop = stopwords.words("english")
-    words = [t for t in words if t not in stop]
-
-    lemm = [WordNetLemmatizer().lemmatize(w) for w in words]
-
-    return lemm
+    return clean_tokens
 
 def build_model():
     pipeline = Pipeline([
@@ -67,8 +73,7 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
-    with open(model_filepath, 'wb') as f:
-        pickle.dump(model, f)
+    pickle.dump(model.best_estimator_, open(model_filepath, 'wb'))
 
 
 def main():
