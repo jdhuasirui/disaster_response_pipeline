@@ -1,3 +1,4 @@
+# Import Python libraries
 import sys
 import pandas as pd
 import numpy as np
@@ -6,13 +7,16 @@ import re
 import pickle
 import nltk
 
+# download NLTK packages
 nltk.download('punkt')
 nltk.download('stopwords')
 
+# Import NLTK libraries
 from nltk.corpus import stopwords
 from nltk.tokenize import word_tokenize
 from nltk.stem import WordNetLemmatizer
 
+# Import sklearn libraries
 from sklearn.pipeline import Pipeline, FeatureUnion
 from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
 from sklearn.model_selection import train_test_split
@@ -22,10 +26,24 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 from sklearn.model_selection import GridSearchCV
 from sklearn.base import BaseEstimator, TransformerMixin
 
+
 def load_data(database_filepath):
+    '''
+    load data from database
+
+    Args:
+    database_filepath str: SQLite database file path.
+
+    Returns:
+    X dataframe: features dataframe
+    Y dataframe: target dataframe
+    category_names list: labels of categories
+    '''
+    # read data from SQLite database
     engine = create_engine("sqlite:///" + database_filepath)
     df = pd.read_sql("SELECT * FROM Messages", engine)
     
+    # Get features and target dataframe
     X = df['message']
     Y = df.drop(['id', 'message', 'original', 'genre'], axis = 1)
     
@@ -35,8 +53,23 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    '''
+    process the text data using tokenization
+
+    Args:
+    text str: Messages as text data
+
+    Returns:
+    list of words after tokenization
+    '''
+    # normalize text
+    text = re.sub(r"[^a-zA-Z0-9]", " ", text.lower())
+    # tokenize text
     tokens = word_tokenize(text)
+
+    #lemmatize and remove stop words
     lemmatizer = WordNetLemmatizer()
+
     stopWords = set(stopwords.words('english'))
     
     clean_tokens = []
@@ -48,23 +81,45 @@ def tokenize(text):
     return clean_tokens
 
 def build_model():
+    '''
+    Build a machine learning pipeline with GridSearchCV
+
+    Args:
+    None
+
+    Returns:
+    Trained model after performing grid search
+    '''
+    # model pipeline
     pipeline = Pipeline([
         ('vect', CountVectorizer(tokenizer=tokenize)),
         ('tfidf', TfidfTransformer()),
         ('clf', MultiOutputClassifier(AdaBoostClassifier()))
     ])
-    # Create Grid search parameters
+    # hyper-parameter grid
     parameters = {
         'tfidf__use_idf': (True, False),
         'clf__estimator__n_estimators': [50, 60, 70]
     }
-
+    # create model
     cv = GridSearchCV(pipeline, param_grid=parameters)
 
     return cv
 
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    '''
+    Evaluate the model using test data
+
+    Args:
+    model: trained model
+    X_test: Test features
+    Y_test: Test target
+    category_names: Target labels
+
+    Returns:
+    print model evalution results
+    '''
     Y_pred = model.predict(X_test)
     Y_pred = pd.DataFrame(Y_pred,columns=category_names)
     for col in category_names:
@@ -73,6 +128,9 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 
 def save_model(model, model_filepath):
+    '''
+    Export the model to a pickle file
+    '''
     pickle.dump(model.best_estimator_, open(model_filepath, 'wb'))
 
 
