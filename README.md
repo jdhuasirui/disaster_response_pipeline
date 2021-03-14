@@ -12,3 +12,6 @@
     `python run.py`
 
 3. Go to http://0.0.0.0:3001/
+
+### Project Overview
+In this Udacity Project, we are using the data provided by Figure Eight to build pipelines to classfy the diaster messages.
