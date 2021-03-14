@@ -14,4 +14,8 @@
 3. Go to http://0.0.0.0:3001/
 
 ### Project Overview
-In this Udacity Project, we are using the data provided by Figure Eight to build pipelines to classfy the diaster messages.
+In this Udacity Project, we are using the data provided by [Figure Eight](https://www.figure-eight.com/) to build pipelines to classfy the diaster messages.
+The project also includes a web app where an emergency worker can input a new message and get classification results in several categories. The web app will also display visualizations of the data. 
+Below are the screenshot of the web app:
+![Main page](screenshots/main.png "Title")
+![Main page](screenshots/result.png "Title")
