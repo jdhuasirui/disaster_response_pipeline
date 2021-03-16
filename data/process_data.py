@@ -37,6 +37,7 @@ def clean_data(df):
     # create a dataframe of the 36 individual category columns
     categories = df.categories.str.split(";", expand=True)
     categories.columns = [x[0] for x in categories.iloc[0].str.split("-")]
+    categories.related.loc[categories.related == 'related-2'] = 'related-1'
     # convert category values to just numbers 0 or 1.
     for column in categories:
         categories[column] = categories[column].astype(str).str.split('-').apply(lambda x:x[1])
@@ -61,7 +62,8 @@ def save_data(df, database_filename):
     None
     """
     engine = create_engine('sqlite:///' + database_filename)
-    df.to_sql('Messages', engine, index=False)  
+    df.to_sql('Messages', engine, index=False, if_exists='replace')
+    engine.dispose()
 
 
 def main():
